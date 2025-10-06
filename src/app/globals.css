@@ -1,0 +1,384 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@source "../node_modules/streamdown/dist/index.js";
+@plugin "@tailwindcss/typography";
+
+/* Dark mode variant - removed @custom-variant for compatibility */
+
+/* Prevent blue background flash - set background immediately */
+html, body {
+  background-color: transparent; /* Let the background from providers/theme-provider show through */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.dark html, .dark body {
+  background-color: transparent; /* Let the background from providers/theme-provider show through */
+}
+
+/* Ensure loading screen covers everything */
+#__next {
+  min-height: 100vh;
+  background-color: inherit;
+}
+
+/* Loading screen specific styles */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: inherit;
+}
+
+/* Add padding for fixed navbar */
+body {
+  padding-top: 64px; /* 64px = h-16 (navbar height) */
+}
+
+/* Ensure proper spacing for fixed navbar */
+.scroll-container {
+  padding-top: 0;
+}
+
+
+:root {
+  --background: hsl(0 0% 97.6471%);
+  --foreground: hsl(0 0% 20%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 20%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 20%);
+  --primary: hsl(246.9065 74.3316% 63.3333%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210.3704 75.7009% 79.0196%);
+  --secondary-foreground: hsl(0 0% 20%);
+  --muted: hsl(45.0000 15.6250% 74.9020%);
+  --muted-foreground: hsl(0 0% 43.1373%);
+  --accent: hsl(72.0000 17.9283% 49.2157%);
+  --accent-foreground: hsl(0 0% 100%);
+  --destructive: hsl(0 84.2365% 60.1961%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 83.1373%);
+  --input: hsl(0 0% 83.1373%);
+  --ring: hsl(246.9065 74.3316% 63.3333%);
+  --chart-1: hsl(246.9065 74.3316% 63.3333%);
+  --chart-2: hsl(282.2857 43.5685% 47.2549%);
+  --chart-3: hsl(274.6154 100% 25.4902%);
+  --chart-4: hsl(218.5401 79.1908% 66.0784%);
+  --chart-5: hsl(207.2727 44% 49.0196%);
+  --sidebar: hsl(0 0% 97.6471%);
+  --sidebar-foreground: hsl(0 0% 20%);
+  --sidebar-primary: hsl(246.9065 74.3316% 63.3333%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(72.0000 17.9283% 49.2157%);
+  --sidebar-accent-foreground: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 83.1373%);
+  --sidebar-ring: hsl(246.9065 74.3316% 63.3333%);
+  --font-sans: Montserrat, sans-serif;
+  --font-serif: Playfair Display, serif;
+  --font-mono: Source Code Pro, monospace;
+  --radius: 0.5rem;
+  --shadow-2xs: 0px 5px 10px -2px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0px 5px 10px -2px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 1px 2px -3px hsl(0 0% 0% / 0.10);
+  --shadow: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 1px 2px -3px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 2px 4px -3px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 4px 6px -3px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 8px 10px -3px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0px 5px 10px -2px hsl(0 0% 0% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: hsl(220.0000 14.7541% 11.9608%);
+  --foreground: hsl(0 0% 89.8039%);
+  --card: hsl(197.1429 6.9307% 19.8039%);
+  --card-foreground: hsl(0 0% 89.8039%);
+  --popover: hsl(197.1429 6.9307% 19.8039%);
+  --popover-foreground: hsl(0 0% 89.8039%);
+  --primary: hsl(246.9065 74.3316% 63.3333%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(274.6154 100% 25.4902%);
+  --secondary-foreground: hsl(0 0% 89.8039%);
+  --muted: hsl(0 0% 26.6667%);
+  --muted-foreground: hsl(0 0% 63.9216%);
+  --accent: hsl(218.5401 79.1908% 66.0784%);
+  --accent-foreground: hsl(0 0% 89.8039%);
+  --destructive: hsl(0 84.2365% 60.1961%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 26.6667%);
+  --input: hsl(0 0% 26.6667%);
+  --ring: hsl(246.9065 74.3316% 63.3333%);
+  --chart-1: hsl(246.9065 74.3316% 63.3333%);
+  --chart-2: hsl(282.2857 43.5685% 47.2549%);
+  --chart-3: hsl(274.6154 100% 25.4902%);
+  --chart-4: hsl(218.5401 79.1908% 66.0784%);
+  --chart-5: hsl(207.2727 44% 49.0196%);
+  --sidebar: hsl(220.0000 14.7541% 11.9608%);
+  --sidebar-foreground: hsl(0 0% 89.8039%);
+  --sidebar-primary: hsl(246.9065 74.3316% 63.3333%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(218.5401 79.1908% 66.0784%);
+  --sidebar-accent-foreground: hsl(0 0% 89.8039%);
+  --sidebar-border: hsl(0 0% 26.6667%);
+  --sidebar-ring: hsl(246.9065 74.3316% 63.3333%);
+  --font-sans: Montserrat, sans-serif;
+  --font-serif: Playfair Display, serif;
+  --font-mono: Source Code Pro, monospace;
+  --radius: 0.5rem;
+  --shadow-2xs: 0px 5px 10px -2px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0px 5px 10px -2px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 1px 2px -3px hsl(0 0% 0% / 0.10);
+  --shadow: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 1px 2px -3px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 2px 4px -3px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 4px 6px -3px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0px 5px 10px -2px hsl(0 0% 0% / 0.10), 0px 8px 10px -3px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0px 5px 10px -2px hsl(0 0% 0% / 0.25);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+/* Custom styles for LegalAI landing page */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* Account for fixed navbar */
+}
+
+/* Ensure proper spacing for fixed navbar */
+body {
+  padding-top: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* Smooth scrolling and performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimize animations for better performance */
+*,
+*::before,
+*::after {
+  will-change: auto;
+  backface-visibility: hidden;
+}
+
+/* Performance optimizations for smooth scrolling */
+.scroll-container {
+  contain: layout style paint;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Optimize heavy animations */
+.animate-optimized {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce paint and layout thrashing */
+.gpu-accelerated {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Smooth transitions for all interactive elements - removed to eliminate fade effects */
+/* a, button, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+} */
+
+/* Optimize scroll performance */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* Ensure hero content stays above the background */
+.hero-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure proper canvas rendering */
+canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: inherit;
+}
+
+/* ---------- Custom Scrollbar Styles ---------- */
+
+/* Variables for easy customization */
+:root {
+    --sb-width: 12px;
+    /* Using Tailwind's gray-500 for the color inspiration */
+    --sb-thumb-color: rgba(107, 114, 128, 0.5); /* Semi-transparent */
+    --sb-thumb-color-hover: rgb(107, 114, 128);   /* Opaque */
+}
+
+/* --- Firefox --- */
+/* Sets the scrollbar style for Firefox */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-thumb-color-hover) transparent; /* thumb, track */
+}
+
+/* --- WebKit / Chromium (Chrome, Safari, Edge, etc.) --- */
+
+/* Sets the width/height of the scrollbar globally */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    width: var(--sb-width);
+    height: var(--sb-width);
+}
+
+/* Forces the track (the channel the thumb slides in) to be transparent */
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*:not(input):not(textarea)::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Styles the draggable thumb */
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+    /* A simple, semi-transparent background color */
+    background-color: var(--sb-thumb-color);
+    
+    /* This creates an "inset" effect, making the thumb appear padded */
+    border: 3px solid transparent;
+    background-clip: content-box;
+
+    /* Gives the thumb rounded corners */
+    border-radius: 20px;
+}
+
+/* Makes the thumb fully opaque on hover for better user feedback */
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--sb-thumb-color-hover);
+}
+
+/* Invisible scrollbar utility */
+.invisible-scrollbar {
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+}
+
+.invisible-scrollbar::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+/* Custom scrollbar for sidebar recent chats */
+.sidebar-scrollbar {
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: rgba(107, 114, 128, 0.6) transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px; /* Medium size scrollbar */
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0; /* No gap */
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5);
+  border-radius: 4px;
+  border: none; /* No border for flush appearance */
+  background-clip: padding-box;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
+}
