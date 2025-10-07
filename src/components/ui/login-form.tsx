@@ -12,7 +12,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Ensure API_BASE_URL doesn't include /api suffix as endpoints already include it
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/api$/, '');
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:10000").replace(/\/api$/, '');
 
 interface LoginFormProps {
   onAuthenticated?: (user: { name: string; email: string; avatar?: string }) => void;

@@ -2,8 +2,8 @@
   "openapi": "3.0.0",
   "info": {
     "title": "LegalAI Backend API",
-    "version": "1.0.0",
-    "description": "API specification for the LegalAI backend service."
+    "version": "1.1.0",
+    "description": "API specification for the LegalAI backend service. Version 1.1.0 adds conversation sharing features."
   },
   "servers": [
     {
@@ -593,6 +593,198 @@
         }
       }
     },
+    "/chat/conversations/{conversationId}/share": {
+      "post": {
+        "summary": "Share or unshare a conversation",
+        "description": "Generate a secure shareable link for a conversation or disable sharing",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the conversation to share or unshare"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "share": {
+                    "type": "boolean",
+                    "description": "Set to true to enable sharing and get a link, false to disable sharing"
+                  }
+                },
+                "required": ["share"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sharing status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "link": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "The shareable link (only present when share is true)"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Status message (only present when share is false)"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/chat/shared/{shareLink}": {
+      "get": {
+        "summary": "Get a shared conversation by secure link",
+        "description": "Access a publicly shared conversation without authentication using the secure hash link",
+        "parameters": [
+          {
+            "name": "shareLink",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The secure hash identifier for the shared conversation"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shared conversation retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "userName": {
+                          "type": "string",
+                          "description": "Name or email of the user who shared the conversation"
+                        },
+                        "conversation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": ["NORMAL", "AGENTIC"]
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "messages": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["USER", "ASSISTANT", "SYSTEM"]
+                                  },
+                                  "content": {
+                                    "type": "string"
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "attachments": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "shareInfo": {
+                          "type": "object",
+                          "properties": {
+                            "viewCount": {
+                              "type": "integer",
+                              "description": "Number of times this link has been viewed"
+                            },
+                            "maxViews": {
+                              "type": "integer",
+                              "nullable": true,
+                              "description": "Maximum number of views allowed (null if unlimited)"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true,
+                              "description": "Expiration date of the link (null if no expiration)"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid share link or shared conversation not found"
+          },
+          "403": {
+            "description": "Sharing is disabled for this user, conversation is no longer shared, link has expired, or view limit exceeded"
+          }
+        }
+      }
+    },
     "/documents": {
       "post": {
         "summary": "Generate a document",
@@ -1038,15 +1230,36 @@
             "format": "email"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "avatar": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "nullable": true
           },
           "provider": {
             "type": "string",
-            "enum": ["LOCAL", "GOOGLE", "META"]
+            "enum": ["LOCAL", "GOOGLE", "META"],
+            "default": "LOCAL"
+          },
+          "shareEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the user has enabled conversation sharing features"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         }
       },
@@ -1067,19 +1280,31 @@
             "enum": ["NORMAL", "AGENTIC"]
           },
           "documentId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "documentName": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "sessionId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "isShared": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the conversation is currently shared via a public link"
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           },
           "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastMessageAt": {
             "type": "string",
             "format": "date-time"
           }
@@ -1179,6 +1404,49 @@
             "type": "string"
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SharedLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "hashedLink": {
+            "type": "string",
+            "description": "Secure random hash used as the share identifier"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Optional expiration date for the share link"
+          },
+          "viewCount": {
+            "type": "integer",
+            "default": 0,
+            "description": "Number of times the shared link has been accessed"
+          },
+          "maxViews": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Optional maximum number of views allowed"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
             "type": "string",
             "format": "date-time"
           }

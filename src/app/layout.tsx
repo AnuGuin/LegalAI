@@ -12,16 +12,22 @@ import { HeroUIProvider } from "@heroui/system";
 const montserrat = Montserrat({
   variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["system-ui", "arial"],
 });
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-serif",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["Georgia", "serif"],
 });
 
 const sourceCodePro = Source_Code_Pro({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["Consolas", "monospace"],
 });
 
 export const metadata: Metadata = {

@@ -231,7 +231,7 @@ function LoadingMessage() {
               "Formulating response...",
             ]}
             className="!text-sm !font-mono !font-normal !text-neutral-300 !justify-start !text-left"
-            interval={800}
+            interval={1000}
           />
         </div>
       </div>

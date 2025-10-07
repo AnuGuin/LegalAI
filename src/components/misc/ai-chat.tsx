@@ -1,6 +1,6 @@
 "use client";
 
-import { Paperclip, Send, X, File, FileText, Image } from "lucide-react";
+import { Paperclip, Send, X, File, FileText, Image, Languages } from "lucide-react";
 import React, { useState, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "motion/react";
@@ -13,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TranslateModal } from "../chat/translate-modal";
 
 interface Tool {
     id: string;
@@ -78,7 +79,7 @@ const ALLOWED_FILE_TYPES = [
     'image/gif'
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
 export default function AI_Input({ onSendMessage, mode = 'chat', disabled = false, showModeIndicator = true }: AI_InputProps) {
     const [value, setValue] = useState("");
@@ -90,22 +91,19 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
     const [isFocused, setIsFocused] = useState(false);
     const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+    const [isTranslateModalOpen, setIsTranslateModalOpen] = useState(false);
+    const [translateLanguages, setTranslateLanguages] = useState<{
+        sourceLang: string;
+        targetLang: string;
+        sourceName: string;
+        targetName: string;
+    } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
-
-        // Validate mode
-        if (mode !== 'agentic') {
-            toast({
-                title: "File upload not available",
-                description: "Please switch to Agentic mode to upload files.",
-                variant: "destructive",
-            });
-            return;
-        }
 
         // Process each file
         const validFiles: UploadedFile[] = [];
@@ -120,7 +118,7 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
 
             // Validate file size
             if (file.size > MAX_FILE_SIZE) {
-                errors.push(`${file.name}: File too large. Maximum size is 10MB.`);
+                errors.push(`${file.name}: File too large. Maximum size is 15MB.`);
                 return;
             }
 
@@ -137,14 +135,14 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
         if (errors.length > 0) {
             toast({
                 title: "File validation failed",
-                description: errors[0], // Show first error
+                description: errors[0],
                 variant: "destructive",
             });
         }
 
         // Add valid files (only allow one file at a time for backend compatibility)
         if (validFiles.length > 0) {
-            // Only keep the first file since backend expects single file
+            // Only keep the first file 
             setUploadedFiles([validFiles[0]]);
             
             if (validFiles.length > 1) {
@@ -169,7 +167,7 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
     const formatFileSize = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const sizes = ['Bytes', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     };
@@ -198,19 +196,32 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
         }
 
         if (disabled) return;
+
+        // Prepare message content
+        let messageContent = value.trim();
         
+        // If translation languages are selected, format the message with translation request
+        if (translateLanguages) {
+            messageContent = `Please translate the following text from ${translateLanguages.sourceName} to ${translateLanguages.targetName}:\n\n${messageContent}`;
+        }
+        
+        // Clear only the input text immediately for better UX
+        setValue("");
+        adjustHeight(true);
+        
+        // Clear uploaded files (for agentic mode)
+        if (mode === 'agentic') {
+            setUploadedFiles([]);
+        }
+        
+        // Then send the message
         if (onSendMessage) {
             // Send message with optional file (only first file)
             const fileToSend = uploadedFiles.length > 0 ? uploadedFiles[0].file : undefined;
-            await onSendMessage(value.trim(), fileToSend);
+            await onSendMessage(messageContent, fileToSend);
         }
         
-        // Clear input and files after successful send
-        setValue("");
-        setUploadedFiles([]);
-        adjustHeight(true); 
     };
-
     const handleFocus = () => {
         setIsFocused(true);
     };
@@ -225,16 +236,17 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
         }
     };
 
-    const handleAttachClick = () => {
-        if (mode !== 'agentic') {
-            toast({
-                title: "File upload not available",
-                description: "Please switch to Agentic mode to upload files.",
-                variant: "destructive",
-            });
-            return;
+    const handleLanguageSelect = (sourceLang: string, targetLang: string, sourceName: string, targetName: string) => {
+        setTranslateLanguages({
+            sourceLang,
+            targetLang,
+            sourceName,
+            targetName,
+        });
+        const translateTool = tools.find(t => t.id === 'translate');
+        if (translateTool) {
+            setSelectedTool(translateTool);
         }
-        fileInputRef.current?.click();
     };
 
     return (
@@ -325,6 +337,26 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                                             </span>
                                         )}
                                     </label>
+                                )}
+                                
+                                {/* Translation language indicator */}
+                                {translateLanguages && (
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-xs font-medium border border-blue-500/20">
+                                        <Languages className="w-3 h-3" />
+                                        <span>{translateLanguages.sourceName} → {translateLanguages.targetName}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setTranslateLanguages(null);
+                                                if (selectedTool?.id === 'translate') {
+                                                    setSelectedTool(null);
+                                                }
+                                            }}
+                                            className="ml-1 hover:bg-blue-500/20 rounded-full p-0.5 transition-colors"
+                                        >
+                                            <X className="w-2.5 h-2.5" />
+                                        </button>
+                                    </div>
                                 )}
                                 
                                 {mode === 'chat' && (
@@ -421,8 +453,14 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    setSelectedTool(tool);
-                                                                    setShowTools(false);
+                                                                    if (tool.id === 'translate') {
+                                                                        setSelectedTool(tool); // Set translate tool as selected
+                                                                        setIsTranslateModalOpen(true);
+                                                                        setShowTools(false);
+                                                                    } else {
+                                                                        setSelectedTool(tool);
+                                                                        setShowTools(false);
+                                                                    }
                                                                 }}
                                                                 className="w-full flex items-center gap-3 p-3 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60 rounded-xl transition-all duration-200 cursor-pointer group hover:shadow-sm border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-700/50"
                                                             >
@@ -442,7 +480,12 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                                         {selectedTool && (
                                             <motion.button
                                                 type="button"
-                                                onClick={() => setSelectedTool(null)}
+                                                onClick={() => {
+                                                    setSelectedTool(null);
+                                                    if (selectedTool.id === 'translate') {
+                                                        setTranslateLanguages(null);
+                                                    }
+                                                }}
                                                 disabled={disabled}
                                                 initial={{ scale: 0, opacity: 0 }}
                                                 animate={{ scale: 1, opacity: 1 }}
@@ -547,18 +590,25 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                     </AnimatePresence>
                 </div>
 
-                {/* Mode indicator help text - only show when specified */}
+                {/* Mode indicator help text */}
                 {showModeIndicator && (
                     <div className="mt-2 text-center">
                         <p className="text-xs text-black/50 dark:text-white/50">
                             {mode === 'agentic' 
-                                ? "Agentic mode: AI with Document Analysis • Upload documents (PDF, DOC, TXT • Max 10MB)"
+                                ? "Agentic mode: AI with Document Analysis • Upload documents (PDF, DOC, TXT • Max 15MB)"
                                 : "Chat mode: General conversation • With Added Tools"
                             }
                         </p>
                     </div>
                 )}
             </div>
+
+            {/* Translate Modal */}
+            <TranslateModal
+                open={isTranslateModalOpen}
+                onOpenChange={setIsTranslateModalOpen}
+                onLanguageSelect={handleLanguageSelect}
+            />
         </div>
     );
 }

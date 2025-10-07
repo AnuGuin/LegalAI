@@ -1,5 +1,5 @@
 // lib/api.service.ts
-const NEXT_PUBLIC_API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api$/, '');
+const NEXT_PUBLIC_API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:10000').replace(/\/api$/, '');
 
 interface ApiResponse<T> {
   success: boolean;
@@ -38,6 +38,21 @@ interface SendMessageResponse {
   };
 }
 
+interface ShareConversationResponse {
+  link?: string;
+  message?: string;
+}
+
+interface Translation {
+  id: string;
+  userId: string;
+  sourceText: string;
+  translatedText: string;
+  sourceLang: string;
+  targetLang: string;
+  createdAt: string;
+}
+
 class ApiService {
   private getAuthToken(): string | null {
     return localStorage.getItem('authToken');
@@ -64,7 +79,25 @@ class ApiService {
 
     try {
       const url = `${NEXT_PUBLIC_API_URL}${endpoint}`;
-      console.log('API Request:', { method: options.method || 'GET', url });
+      // Prepare a small, safe representation of the body for debugging logs
+      let requestBodyForLog: any = undefined;
+      try {
+        if (options.body instanceof FormData) {
+          // List keys for FormData (do not log file contents)
+          requestBodyForLog = Array.from((options.body as FormData).keys());
+        } else if (typeof options.body === 'string') {
+          // Try to JSON.parse for nicer display, otherwise keep as string (trimmed)
+          try {
+            requestBodyForLog = JSON.parse(options.body as string);
+          } catch {
+            requestBodyForLog = (options.body as string).slice(0, 1000);
+          }
+        }
+      } catch (e) {
+        requestBodyForLog = 'Unable to inspect body for log';
+      }
+
+      console.log('API Request:', { method: options.method || 'GET', url, headers, body: requestBodyForLog });
       
       const response = await fetch(url, {
         ...options,
@@ -72,18 +105,27 @@ class ApiService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          message: response.status === 404 ? 'Route not found' : 'An error occurred',
-        }));
-        
-        const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
-        console.error('API Error:', { 
-          url, 
-          status: response.status, 
-          message: errorMessage 
+        // Try to read raw text to preserve any validation details the server returns
+        const responseText = await response.text().catch(() => '');
+        let errorData: any = undefined;
+        try {
+          errorData = responseText ? JSON.parse(responseText) : undefined;
+        } catch {
+          // not JSON, keep raw text
+        }
+
+        const errorMessageFromBody = (errorData && (errorData.message || errorData.error)) || responseText || `HTTP error! status: ${response.status}`;
+
+        console.error('API Error:', {
+          url,
+          status: response.status,
+          headers,
+          requestBody: requestBodyForLog,
+          responseText: responseText.slice ? responseText.slice(0, 2000) : responseText,
+          parsedError: errorData,
         });
-        
-        throw new Error(errorMessage);
+
+        throw new Error(`HTTP ${response.status}: ${errorMessageFromBody}`);
       }
 
       return await response.json();
@@ -254,7 +296,88 @@ class ApiService {
 
     return response.data;
   }
+
+  /**
+   * Share or unshare a conversation. Returns a link when sharing is enabled.
+   */
+  async shareConversation(conversationId: string, share: boolean): Promise<ShareConversationResponse> {
+    const response = await this.request<ApiResponse<ShareConversationResponse>>(
+      `/api/chat/conversations/${conversationId}/share`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ share }),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error('Failed to update sharing status');
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Get a shared conversation by secure link (public endpoint)
+   */
+  async getSharedConversation(shareLink: string): Promise<{ userName: string; conversation: Conversation }> {
+    const response = await this.request<ApiResponse<{ userName: string; conversation: Conversation }>>(
+      `/api/chat/shared/${encodeURIComponent(shareLink)}`
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error('Failed to fetch shared conversation');
+    }
+
+    return response.data;
+  }
+
+  // ==================== Translation APIs ====================
+
+  /**
+   * Translate text
+   */
+  async translateText(params: {
+    text: string;
+    sourceLang: string;
+    targetLang: string;
+  }): Promise<ApiResponse<Translation>> {
+    const response = await this.request<ApiResponse<Translation>>(
+      '/api/translation/translate',
+      {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }
+    );
+
+    return response;
+  }
+
+  /**
+   * Detect language of text
+   */
+  async detectLanguage(text: string): Promise<ApiResponse<{ language: string; display_name: string }>> {
+    const response = await this.request<ApiResponse<{ language: string; display_name: string }>>(
+      '/api/translation/detect-language',
+      {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      }
+    );
+
+    return response;
+  }
+
+  /**
+   * Get translation history
+   */
+  async getTranslationHistory(): Promise<ApiResponse<Translation[]>> {
+    const response = await this.request<ApiResponse<Translation[]>>(
+      '/api/translation/history'
+    );
+
+    return response;
+  }
 }
 
 export const apiService = new ApiService();
-export type { Conversation, Message, SendMessageResponse };
+export type { Conversation, Message, SendMessageResponse, Translation };

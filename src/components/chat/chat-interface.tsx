@@ -166,6 +166,8 @@ export function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
 
       // Send message to backend
       const mode = selectedMode === 'chat' ? 'NORMAL' : 'AGENTIC'
+      // Debug: log sendMessage parameters to diagnose HTTP 422 validation errors
+      console.log('Calling apiService.sendMessage with:', { conversationId, content, mode, hasFile: !!file });
       const response = await apiService.sendMessage(
         conversationId!,
         content,
@@ -276,26 +278,47 @@ export function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
 
   const handleShareConversation = () => {
     if (!activeConversation) return
-    
-    const conversationText = activeConversation.messages
-      ?.map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-      .join('\n\n') || ''
-    
-    navigator.clipboard.writeText(conversationText)
-      .then(() => {
+
+    // Call backend to enable sharing and get secure link
+    (async () => {
+      try {
+        const result = await apiService.shareConversation(activeConversation.id, true)
+
+        if (result.link) {
+          try {
+            await navigator.clipboard.writeText(result.link)
+            toast({
+              title: "Share link copied",
+              description: "A secure shareable link has been created and copied to your clipboard.",
+            })
+          } catch (err) {
+            // Copy failed, but sharing succeeded — show link in toast
+            console.error('Failed to copy share link to clipboard:', err)
+            toast({
+              title: "Share link created",
+              description: result.link,
+            })
+          }
+        } else if (result.message) {
+          toast({
+            title: "Share status",
+            description: result.message,
+          })
+        } else {
+          toast({
+            title: "Sharing updated",
+            description: "Sharing status updated successfully.",
+          })
+        }
+      } catch (error) {
+        console.error('Failed to update sharing status:', error)
         toast({
-          title: "Copied to clipboard",
-          description: "The conversation has been copied to your clipboard.",
-        })
-      })
-      .catch(err => {
-        console.error('Failed to copy conversation:', err)
-        toast({
-          title: "Failed to copy",
-          description: "Could not copy the conversation to clipboard.",
+          title: "Failed to share conversation",
+          description: error instanceof Error ? error.message : "Please try again",
           variant: "destructive",
         })
-      })
+      }
+    })()
   }
 
   const handleDeleteConversation = () => {
