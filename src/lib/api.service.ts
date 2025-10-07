@@ -1,4 +1,3 @@
-// lib/api.service.ts
 const NEXT_PUBLIC_API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:10000').replace(/\/api$/, '');
 
 interface ApiResponse<T> {
@@ -58,6 +57,7 @@ class ApiService {
     return localStorage.getItem('authToken');
   }
 
+  
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
