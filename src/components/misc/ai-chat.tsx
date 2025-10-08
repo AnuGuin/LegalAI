@@ -1,12 +1,13 @@
 "use client";
 
 import { Paperclip, Send, X, File, FileText, Image, Languages } from "lucide-react";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { useToast } from "@/hooks/use-toast";
+import { apiService } from "@/lib/api.service";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -98,12 +99,66 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
         sourceName: string;
         targetName: string;
     } | null>(null);
+    const [detectedLanguage, setDetectedLanguage] = useState<{
+        language: string;
+        display_name: string;
+    } | null>(null);
+    const [isDetecting, setIsDetecting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
+
+    // Debounced language detection for agentic mode
+    useEffect(() => {
+        // Only detect language in agentic mode and when there's text
+        if (mode !== 'agentic' || !value.trim() || value.trim().length < 3) {
+            setDetectedLanguage(null);
+            return;
+        }
+
+        // Clear existing timer
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        // Set new timer for debounced detection
+        debounceTimerRef.current = setTimeout(async () => {
+            try {
+                setIsDetecting(true);
+                const response = await apiService.detectLanguage(value.trim());
+                
+                if (response.success && response.data) {
+                    setDetectedLanguage(response.data);
+                }
+            } catch (error) {
+                console.error('Language detection failed:', error);
+                // Silently fail - don't show error to user for auto-detection
+            } finally {
+                setIsDetecting(false);
+            }
+        }, 800); 
+
+        // Cleanup on unmount or value change
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, [value, mode]);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files) return;
+
+        // Validate mode
+        if (mode !== 'agentic') {
+            toast({
+                title: "File upload not available",
+                description: "Please switch to Agentic mode to upload files.",
+                variant: "destructive",
+            });
+            return;
+        }
 
         // Process each file
         const validFiles: UploadedFile[] = [];
@@ -118,7 +173,7 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
 
             // Validate file size
             if (file.size > MAX_FILE_SIZE) {
-                errors.push(`${file.name}: File too large. Maximum size is 15MB.`);
+                errors.push(`${file.name}: File too large. Maximum size is 10MB.`);
                 return;
             }
 
@@ -142,7 +197,7 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
 
         // Add valid files (only allow one file at a time for backend compatibility)
         if (validFiles.length > 0) {
-            // Only keep the first file 
+            // Only keep the first file since backend expects single file
             setUploadedFiles([validFiles[0]]);
             
             if (validFiles.length > 1) {
@@ -214,6 +269,9 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
             setUploadedFiles([]);
         }
         
+        // Clear detected language on send
+        setDetectedLanguage(null);
+        
         // Then send the message
         if (onSendMessage) {
             // Send message with optional file (only first file)
@@ -221,7 +279,9 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
             await onSendMessage(messageContent, fileToSend);
         }
         
+        // Note: Keep selectedTool and translateLanguages intact so user can send multiple messages with same settings
     };
+
     const handleFocus = () => {
         setIsFocused(true);
     };
@@ -339,6 +399,33 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                                     </label>
                                 )}
                                 
+                                {/* Detected language indicator (Agentic mode only) */}
+                                {mode === 'agentic' && detectedLanguage && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                                        exit={{ opacity: 0, scale: 0.8, x: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-medium border border-emerald-500/20"
+                                    >
+                                        <Languages className="w-3 h-3" />
+                                        <span>{detectedLanguage.display_name}</span>
+                                    </motion.div>
+                                )}
+                                
+                                {/* Detecting indicator */}
+                                {mode === 'agentic' && isDetecting && !detectedLanguage && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="flex items-center gap-1 px-2 py-1 bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-full text-xs font-medium border border-gray-500/20"
+                                    >
+                                        <Languages className="w-3 h-3 animate-pulse" />
+                                        <span>Detecting...</span>
+                                    </motion.div>
+                                )}
+                                
                                 {/* Translation language indicator */}
                                 {translateLanguages && (
                                     <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-xs font-medium border border-blue-500/20">
@@ -454,7 +541,7 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                                                                 type="button"
                                                                 onClick={() => {
                                                                     if (tool.id === 'translate') {
-                                                                        setSelectedTool(tool); // Set translate tool as selected
+                                                                        setSelectedTool(tool);
                                                                         setIsTranslateModalOpen(true);
                                                                         setShowTools(false);
                                                                     } else {
@@ -595,7 +682,7 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
                     <div className="mt-2 text-center">
                         <p className="text-xs text-black/50 dark:text-white/50">
                             {mode === 'agentic' 
-                                ? "Agentic mode: AI with Document Analysis • Upload documents (PDF, DOC, TXT • Max 15MB)"
+                                ? "Agentic mode: AI with Document Analysis • Upload documents (PDF, DOC, TXT • Max 10MB)"
                                 : "Chat mode: General conversation • With Added Tools"
                             }
                         </p>
