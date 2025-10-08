@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import ChatSidebar from "@/components/misc/chat-sidebar"
 import { ChatMessagesArea } from "./chat-message"
 import { ChatModeSelector } from "../misc/mode-selector"
+import { useAiMode } from '@/context/ai-mode-context';
 import { useToast } from "@/hooks/use-toast"
 import { apiService, type Conversation as BackendConversation, type Message as BackendMessage } from "@/lib/api.service"
 import { type Message, type MessageRole, type Conversation } from "@/types/chat.types"
@@ -33,7 +34,8 @@ export function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingConversations, setIsLoadingConversations] = useState(true)
   const [isNewConversationSelected, setIsNewConversationSelected] = useState(false)
-  const [selectedMode, setSelectedMode] = useState<'chat' | 'agentic'>('chat')
+  // Use shared mode from context
+  const { selectedMode } = useAiMode();
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const [streamingContent, setStreamingContent] = useState<string>("")
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -78,9 +80,7 @@ export function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
     }
   }
 
-  const handleModeChange = (mode: string) => {
-    setSelectedMode(mode as 'chat' | 'agentic')
-  }
+  // Mode changes are handled at the layout via context provider
 
   // Stream text effect for AI responses
   const streamText = (text: string, messageId: string, conversationId: string) => {
@@ -381,7 +381,6 @@ export function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
           <div className="sticky top-0 z-20 bg-[rgb(33,33,33)]">
             <ChatModeSelector
               variant="default"
-              onModeChange={handleModeChange}
               onTempChatClick={handleTempChatClick}
               onShareClick={handleShareConversation}
               onDeleteClick={handleDeleteConversation}
@@ -423,7 +422,6 @@ export function ChatInterface({ user, onLogout }: ChatInterfaceProps) {
         <div className="sticky top-0 z-20 bg-[rgb(33,33,33)]">
           <ChatModeSelector
             variant={activeConversation ? 'chat-selected' : 'default'}
-            onModeChange={handleModeChange}
             onTempChatClick={handleTempChatClick}
             onShareClick={handleShareConversation}
             onDeleteClick={handleDeleteConversation}

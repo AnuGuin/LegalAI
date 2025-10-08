@@ -8,6 +8,27 @@ import { ChatModeSelector } from "@/components/misc/mode-selector";
 import BounceLoader from "@/components/ui/bounce-loader";
 import { useToast } from "@/hooks/use-toast";
 import { apiService, type Conversation as BackendConversation } from "@/lib/api.service";
+import { AiModeProvider, useAiMode } from '@/context/ai-mode-context';
+
+// Bridge component to connect ChatModeSelector with AiMode context
+function ModeSelectorBridge({ variant, onTempChatClick, onShareClick, onDeleteClick }: any) {
+  const { selectedMode, setSelectedMode } = useAiMode();
+
+  const handleModeChange = (mode: string) => {
+    setSelectedMode(mode as 'chat' | 'agentic');
+  };
+
+  return (
+    <ChatModeSelector
+      variant={variant}
+      defaultMode={selectedMode}
+      onModeChange={handleModeChange}
+      onTempChatClick={onTempChatClick}
+      onShareClick={onShareClick}
+      onDeleteClick={onDeleteClick}
+    />
+  );
+}
 import { type Conversation } from "@/types/chat.types";
 
 interface User {
@@ -29,6 +50,7 @@ export default function AILayout({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  // Keep local default but main source of truth will be the context provider
   const [selectedMode, setSelectedMode] = useState<'chat' | 'agentic'>('chat');
 
   // Extract active conversation ID from pathname
@@ -107,9 +129,7 @@ export default function AILayout({
     }
   };
 
-  const handleModeChange = (mode: string) => {
-    setSelectedMode(mode as 'chat' | 'agentic');
-  };
+  // We'll sync the selector with context via a small wrapper component below
 
   const handleNewConversation = () => {
     router.push('/ai');
@@ -245,30 +265,30 @@ export default function AILayout({
       />
       
       {/* Main content area */}
-      <div className="flex-1 flex flex-col relative z-10 min-w-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] h-full" style={{ maxWidth: 'calc(100vw - 65px)' }}>
-        {/* Mode Selector - Persists across route changes */}
-        <div className="sticky top-0 z-20 bg-[rgb(33,33,33)] flex-shrink-0">
-          <ChatModeSelector
-            variant={activeConversationId ? 'chat-selected' : 'default'}
-            onModeChange={handleModeChange}
-            onTempChatClick={handleTempChatClick}
-            onShareClick={handleShareConversation}
-            onDeleteClick={handleDeleteConversation}
-          />
-        </div>
+      <AiModeProvider initialMode={selectedMode}>
+        <div className="flex-1 flex flex-col relative z-10 min-w-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] h-full" style={{ maxWidth: 'calc(100vw - 65px)' }}>
+          {/* Mode Selector - Persists across route changes */}
+          <div className="sticky top-0 z-20 bg-[rgb(33,33,33)] flex-shrink-0">
+            <ModeSelectorBridge
+              variant={activeConversationId ? 'chat-selected' : 'default'}
+              onTempChatClick={handleTempChatClick}
+              onShareClick={handleShareConversation}
+              onDeleteClick={handleDeleteConversation}
+            />
+          </div>
 
-        {/* Page content - This changes based on route */}
-
-        <div className="flex-1 overflow-hidden min-h-0 relative">
-          {activeConversationId ? (
-            <div className="h-full overflow-hidden min-h-0">{children}</div>
-          ) : (
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex items-center justify-center p-6" style={{ top: 'calc(50% - 30px)' }}>
-              {children}
-            </div>
-          )}
+          {/* Page content - This changes based on route */}
+          <div className="flex-1 overflow-hidden min-h-0 relative">
+            {activeConversationId ? (
+              <div className="h-full overflow-hidden min-h-0">{children}</div>
+            ) : (
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex items-center justify-center p-6" style={{ top: 'calc(50% - 30px)' }}>
+                {children}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </AiModeProvider>
     </div>
   );
 }

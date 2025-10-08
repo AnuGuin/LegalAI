@@ -6,16 +6,18 @@ import { TextShimmer } from "@/components/ui/text-shimmer";
 import AI_Input from "@/components/misc/ai-chat";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from "@/lib/api.service";
+import { useAiMode } from '@/context/ai-mode-context';
 
 export default function AIWelcomePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [selectedMode, setSelectedMode] = useState<'chat' | 'agentic'>('chat');
   const [isCreating, setIsCreating] = useState(false);
 
   // Get user from localStorage
   const userStr = typeof window !== 'undefined' ? localStorage.getItem("user") : null;
   const user = userStr ? JSON.parse(userStr) : { name: "Guest" };
+
+  const { selectedMode } = useAiMode();
 
   const handleSendMessage = async (content: string, file?: File) => {
     if (!content.trim() && !file) return;
@@ -25,7 +27,7 @@ export default function AIWelcomePage() {
       setIsCreating(true);
       
       // Create conversation
-      const mode = selectedMode === 'chat' ? 'NORMAL' : 'AGENTIC';
+  const mode = selectedMode === 'chat' ? 'NORMAL' : 'AGENTIC';
       const title = content.length > 50 ? content.substring(0, 50) + "..." : content;
       
       //console.log('Creating new conversation with mode:', mode, 'title:', title);
