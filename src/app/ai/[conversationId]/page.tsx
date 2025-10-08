@@ -137,7 +137,7 @@ export default function ConversationPage() {
 
       // Send message to backend
       const mode = conversation.mode || 'NORMAL';
-      console.log('Sending message to conversation:', conversationId);
+      // console.log('Sending message to conversation:', conversationId);
       
       const response = await apiService.sendMessage(
         conversationId,

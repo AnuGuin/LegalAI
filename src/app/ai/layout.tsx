@@ -49,15 +49,15 @@ export default function AILayout({
     if (storedUser && authToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        console.log("AI Layout: User authenticated", parsedUser);
+        //console.log("AI Layout: User authenticated", parsedUser);
         setUser(parsedUser);
         setIsCheckingAuth(false);
       } catch (error) {
-        console.error("Failed to parse user data:", error);
+        //console.error("Failed to parse user data:", error);
         router.push("/auth");
       }
     } else {
-      console.log("AI Layout: No authentication found, redirecting");
+      //console.log("AI Layout: No authentication found, redirecting");
       router.push("/auth");
     }
   }, [router]);
@@ -74,7 +74,7 @@ export default function AILayout({
       setIsLoadingConversations(true);
       const fetchedConversations = await apiService.getConversations();
       
-      console.log('Layout: Fetched conversations:', fetchedConversations);
+      //console.log('Layout: Fetched conversations:', fetchedConversations);
       
       // Transform conversations for sidebar
       const transformedConversations = fetchedConversations.map(conv => {
@@ -258,12 +258,7 @@ export default function AILayout({
         </div>
 
         {/* Page content - This changes based on route */}
-        {/*
-          When there is no active conversation (welcome /ai), place the
-          children inside an absolutely centered container so the input
-          and welcome message sit perfectly in the middle. For active
-          conversations keep the normal flow.
-        */}
+
         <div className="flex-1 overflow-hidden min-h-0 relative">
           {activeConversationId ? (
             <div className="h-full overflow-hidden min-h-0">{children}</div>

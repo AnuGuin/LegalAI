@@ -28,10 +28,10 @@ export default function AIWelcomePage() {
       const mode = selectedMode === 'chat' ? 'NORMAL' : 'AGENTIC';
       const title = content.length > 50 ? content.substring(0, 50) + "..." : content;
       
-      console.log('Creating new conversation with mode:', mode, 'title:', title);
+      //console.log('Creating new conversation with mode:', mode, 'title:', title);
       const newConversation = await apiService.createConversation(mode, title);
       
-      console.log('Conversation created:', newConversation.id);
+      //console.log('Conversation created:', newConversation.id);
       
       // Send the first message
       await apiService.sendMessage(newConversation.id, content, mode, file);
