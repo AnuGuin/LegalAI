@@ -8,27 +8,9 @@ import { Response as MarkdownResponse } from "../misc/response";
 import { Actions, Action } from "../misc/actions";
 import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { Message, Conversation } from "@/types/chat.types";
 import CookiePolicyDialog from '@/components/docs/terms/cookie-dialog';
 
-interface Message {
-  id: string;
-  content: string;
-  role: "user" | "assistant" | "system";
-  attachments?: string[];
-  metadata?: any;
-  createdAt?: Date | string;
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  messages: Message[];
-  lastMessage: string;
-  mode?: 'NORMAL' | 'AGENTIC';
-  documentId?: string;
-  documentName?: string;
-  sessionId?: string;
-}
 
 interface ChatMessagesAreaProps {
   user: { name: string; email: string; avatar?: string };
@@ -419,11 +401,12 @@ export const ChatMessagesArea = forwardRef<ChatMessagesAreaRef, ChatMessagesArea
     };
 
     const handleRegenerateStreaming = () => {
-      if (!activeConversation || !activeConversation.messages.length) return;
-      
-      for (let i = activeConversation.messages.length - 1; i >= 0; i--) {
-        if (activeConversation.messages[i].role === 'user') {
-          onSendMessage(activeConversation.messages[i].content);
+      const msgs = activeConversation?.messages;
+      if (!msgs || msgs.length === 0) return;
+
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === 'user') {
+          onSendMessage(msgs[i].content);
           break;
         }
       }
@@ -452,7 +435,7 @@ export const ChatMessagesArea = forwardRef<ChatMessagesAreaRef, ChatMessagesArea
       }
     }, [activeConversation?.messages, isNewConversationSelected]);
 
-    const hasMessages = activeConversation && activeConversation.messages.length > 0;
+  const hasMessages = !!activeConversation && (activeConversation.messages?.length ?? 0) > 0;
 
     return (
       <>
@@ -465,7 +448,7 @@ export const ChatMessagesArea = forwardRef<ChatMessagesAreaRef, ChatMessagesArea
         >
           {hasMessages ? (
             <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
-              {activeConversation.messages.map((message) => (
+              {activeConversation!.messages!.map((message) => (
                 <ChatMessage 
                   key={message.id}
                   message={message}
@@ -474,10 +457,10 @@ export const ChatMessagesArea = forwardRef<ChatMessagesAreaRef, ChatMessagesArea
                   isStreaming={streamingMessageId === message.id}
                   streamingContent={streamingMessageId === message.id ? streamingContent : undefined}
                   onRegenerate={message.role === 'assistant' ? handleRegenerateMessage : undefined}
-                  messages={activeConversation.messages}
+                  messages={activeConversation!.messages!}
                 />
               ))}
-              {streamingMessageId && !activeConversation.messages.find(m => m.id === streamingMessageId) && (
+              {streamingMessageId && !activeConversation!.messages!.find(m => m.id === streamingMessageId) && (
                 <StreamingMessage 
                   streamingContent={streamingContent}
                   onRegenerate={handleRegenerateStreaming}
