@@ -172,8 +172,8 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
             }
 
             // Validate file size
-            if (file.size > MAX_FILE_SIZE) {
-                errors.push(`${file.name}: File too large. Maximum size is 10MB.`);
+                if (file.size > MAX_FILE_SIZE) {
+                    errors.push(`${file.name}: File too large. Maximum size is ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB.`);
                 return;
             }
 
@@ -259,7 +259,14 @@ export default function AI_Input({ onSendMessage, mode = 'chat', disabled = fals
         if (translateLanguages) {
             messageContent = `Please translate the following text from ${translateLanguages.sourceName} to ${translateLanguages.targetName}:\n\n${messageContent}`;
         }
-        
+        // Debug: log translation selection and final message content to help diagnose 422 errors
+        console.log('AI Input - sending message', {
+            mode,
+            translateLanguages,
+            messagePreview: messageContent && messageContent.length > 1000 ? messageContent.slice(0, 1000) + '... (truncated)' : messageContent,
+            hasFile: uploadedFiles.length > 0
+        });
+
         // Clear only the input text immediately for better UX
         setValue("");
         adjustHeight(true);

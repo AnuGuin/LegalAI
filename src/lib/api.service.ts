@@ -53,6 +53,17 @@ interface Translation {
 }
 
 class ApiService {
+  // Custom error class to surface HTTP status and body from API errors
+  private ApiError = class ApiError extends Error {
+    status: number
+    body: any
+    constructor(status: number, message: string, body?: any) {
+      super(message)
+      this.name = 'ApiError'
+      this.status = status
+      this.body = body
+    }
+  }
   private getAuthToken(): string | null {
     return localStorage.getItem('authToken');
   }
@@ -116,16 +127,15 @@ class ApiService {
 
         const errorMessageFromBody = (errorData && (errorData.message || errorData.error)) || responseText || `HTTP error! status: ${response.status}`;
 
-        console.error('API Error:', {
-          url,
-          status: response.status,
-          headers,
-          requestBody: requestBodyForLog,
-          responseText: responseText.slice ? responseText.slice(0, 2000) : responseText,
-          parsedError: errorData,
-        });
+        // Log both the raw response text and any parsed JSON to make
+        // debugging server-side validation errors (422) easier to see.
+        console.error('API Error: url=', url, ' status=', response.status, ' statusText=', response.statusText)
+        console.error('API Error - request body (preview):', requestBodyForLog)
+        console.error('API Error - raw responseText (preview):', responseText && responseText.slice ? responseText.slice(0, 2000) : responseText)
+        console.error('API Error - parsed JSON body:', errorData)
 
-        throw new Error(`HTTP ${response.status}: ${errorMessageFromBody}`);
+        // Throw a richer error object so callers (and tests) can inspect status/body
+        throw new this.ApiError(response.status, `HTTP ${response.status}: ${errorMessageFromBody}`, errorData ?? responseText);
       }
 
       return await response.json();

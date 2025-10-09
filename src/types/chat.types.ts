@@ -1,6 +1,3 @@
-// types/chat.types.ts
-// Frontend type definitions for chat functionality
-
 export type MessageRole = "user" | "assistant" | "system";
 export type ChatMode = "chat" | "agentic";
 export type BackendMode = "NORMAL" | "AGENTIC";
@@ -36,7 +33,8 @@ export interface Conversation {
   documentName?: string;
   sessionId?: string;
   messages?: Message[];
-  lastMessage?: string;
+  isLoading?: boolean;
+  lastMessage: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
